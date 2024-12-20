@@ -1,0 +1,15 @@
+{
+  "Lua.diagnostics.globals": [
+    "peripheral",
+    "rednet",
+    "term",
+    "turtle",
+    "redstone",
+    "sleep",
+    "read",
+    "http",
+    "textutils",
+    "fs",
+    "gps"
+  ]
+}
