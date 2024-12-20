@@ -90,7 +90,7 @@ local function digForward()
 end
 
 local function main()
-    while true do
+    for i=0, 100 do
         digForward();        
     end
 end
