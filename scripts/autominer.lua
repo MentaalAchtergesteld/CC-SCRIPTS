@@ -93,6 +93,13 @@ local function main()
     for i=0, 100 do
         digForward();        
     end
+
+    ecdysis.turnLeft();
+    ecdysis.turnLeft();
+    
+    for i=0, 100 do
+        ecdysis.forceForward();
+    end
 end
 
 main();
