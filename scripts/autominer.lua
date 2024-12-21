@@ -22,6 +22,18 @@ local ORES = {
     "create:deepslate_zinc_ore",
 };
 
+local KEEP = {
+    "minecraft:coal",
+    "minecraft:raw_iron",
+    "minecraft:raw_copper",
+    "minecraft:raw_gold",
+    "minecraft:redstone",
+    "minecraft:emerald",
+    "minecraft:lapis_lazuli",
+    "minecraft:diamond",
+    "create:raw_zinc"
+}
+
 local function isOre(block)
     if not block or not block.name then
         return false;
@@ -79,6 +91,16 @@ local function mineOreVein(firstOrePosition, endPosition)
     ecdysis.pathfindToPosition(ecdysis.getPosition(), endPosition, visited);
 end
 
+local function filterInventory()
+    for i=1, 16 do
+        local itemDetail = turtle.getItemDetail(i);
+
+        if itemDetail and not table.contains(KEEP, itemDetail.name) then
+            turtle.dropDown();
+        end
+    end
+end
+
 local function digForward()
     ecdysis.forceForward();
 
@@ -91,7 +113,11 @@ end
 
 local function main()
     for i=0, 100 do
-        digForward();        
+        digForward();
+
+        if i%5 then
+            filterInventory();
+        end
     end
 
     ecdysis.turnLeft();
