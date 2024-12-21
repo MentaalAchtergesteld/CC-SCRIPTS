@@ -1,7 +1,7 @@
 local baseURL = "https://raw.githubusercontent.com/MentaalAchtergesteld/CC-SCRIPTS/refs/heads/main/";
-local storeURL = baseURL + "store.json";
-local scriptsURL = baseURL + "scripts/";
-local libURL = baseURL + "lib/";
+local storeURL = baseURL .. "store.json";
+local scriptsURL = baseURL .. "scripts/";
+local libURL = baseURL .. "lib/";
 
 local screenWidth, screenHeight = term.getSize();
 
@@ -29,7 +29,7 @@ end
 
 local function installScript(script)
     print(string.format("[INFO] Installing %s...", script.name));
-    local response = http.get(scriptsURL + script.file);
+    local response = http.get(scriptsURL .. script.file);
     if not response then
         error("Failed to download %s", script.name);
     end
