@@ -1,14 +1,22 @@
 [
   {
-    "name": "EasyDig"
+    "name": "AutoMiner",
+    "description": "Mines a tunnel, until it finds ore. Then it'll mine that ore vein. Very not finished right now.",
+    "file": "autominer.lua"
   },
   {
-    "name": "Cobbler"
+    "name": "Cobbler",
+    "description": "Quite a simple program. Digs cobble in front of it, dumps it in the chest below it. For use with a cobble generator.",
+    "file": "cobbler.lua"
   },
   {
-    "name": "AutoMiner"
+    "name": "EasyDig",
+    "description": "Give it a width, depth and height and it'll dig the area out for you. Checks for fuel, and allows for both starting on the top or bottom of your area.",
+    "file": "easydig.lua"
   },
   {
-    "name": "MineShafter"
+    "name": "MineShafter",
+    "description": "15 down, 5 forward. Tell it how often to repeat this, it might ask you to feed it but afterwards your mine will be automatically dug out.",
+    "file": "mineshafter.lua"
   }
 ]
