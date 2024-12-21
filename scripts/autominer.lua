@@ -123,6 +123,7 @@ local function main()
         );
 
         if turtle.getFuelLevel() < distanceToStart + 100 then
+            print("Not enough fuel left, returning.");
             break;
         end
 
