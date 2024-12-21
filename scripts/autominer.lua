@@ -96,6 +96,7 @@ local function filterInventory()
         local itemDetail = turtle.getItemDetail(i);
 
         if itemDetail and not table.contains(KEEP, itemDetail.name) then
+            turtle.select(i);
             turtle.dropDown();
         end
     end
