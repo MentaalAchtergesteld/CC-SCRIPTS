@@ -112,7 +112,19 @@ local function digForward()
 end
 
 local function main()
+    local startPosition = { x = ecdysis.getPosition().x, y = ecdysis.getPosition().y, z = ecdysis.getPosition().z };
+
     for i=0, 100 do
+        local distanceToStart = math.sqrt(
+            startPosition.x * startPosition.x +
+            startPosition.y * startPosition.y +
+            startPosition.z * startPosition.z
+        );
+
+        if turtle.getFuelLevel() < distanceToStart + 100 then
+            break;
+        end
+
         digForward();
 
         if i%5 then
@@ -120,12 +132,7 @@ local function main()
         end
     end
 
-    ecdysis.turnLeft();
-    ecdysis.turnLeft();
-    
-    for i=0, 100 do
-        ecdysis.forceForward();
-    end
+    ecdysis.pathfindToPosition(ecdysis.getPosition(), startPosition);
 end
 
 main();
