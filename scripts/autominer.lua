@@ -134,7 +134,7 @@ local function main()
         end
     end
 
-    ecdysis.pathfindToPosition(ecdysis.getPosition(), startPosition);
+    ecdysis.moveTo(startPosition);
 end
 
 main();
