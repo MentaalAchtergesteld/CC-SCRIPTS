@@ -70,13 +70,13 @@ local function drawScriptsList(scripts, selectedIndex)
     term.setCursorPos(1,1);
     print("=== Script Store ===");
 
-    for i=1, math.min(screenHeight - 2, #scripts) do
+    for i=1, math.min(screenHeight - 3, #scripts) do
         local scriptIndex = i + (selectedIndex - 1);
         if scriptIndex > #scripts then break end
 
         local script = scripts[scriptIndex];
         if scriptIndex == selectedIndex then
-            term.setTextColor(colors.gray);
+            term.setTextColor(colors.lightGray);
         else
             term.setTextColor(colors.white);
         end
@@ -85,6 +85,9 @@ local function drawScriptsList(scripts, selectedIndex)
     end
 
     term.setTextColor(colors.white);
+
+    term.setCursorPos(1, screenHeight);
+    term.write("[Q] Quit");
 end
 
 local function drawScriptDetails(script)
@@ -121,6 +124,8 @@ local function main()
                 selectedIndex = math.min(selectedIndex + 1, #scripts);
             elseif key == keys.enter then
                 state = UIStates.ScriptDetail;
+            elseif key == keys.q then
+                break;
             end
         elseif state == UIStates.ScriptDetail then
             local script = scripts[selectedIndex];
@@ -140,6 +145,11 @@ local function main()
 
         sleep(0.1);
     end
+
+    print("Quitting store.");
+    sleep(0.5);
+    term.clear();
+    term.setCursorPos(1, 1);
 end
 
 main();
