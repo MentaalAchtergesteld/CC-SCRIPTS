@@ -41,12 +41,5 @@
     "description": "Simple extension library for tables. Printing, filtering etc.",
     "file": "tabula.lua",
     "type": "lib"
-  },
-  {
-    "name": "Test",
-    "id": "test",
-    "description": "A quick test program.",
-    "file": "test.lua",
-    "type": "script"
   }
 ]
