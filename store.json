@@ -1,6 +1,7 @@
 [
   {
     "name": "AutoMiner",
+    "id": "autominer",
     "description": "Mines a tunnel, until it finds ore. Then it'll mine that ore vein. Very not finished right now.",
     "file": "autominer.lua",
     "type": "script",
@@ -8,30 +9,35 @@
   },
   {
     "name": "Cobbler",
+    "id": "cobbler",
     "description": "Quite a simple program. Digs cobble in front of it, dumps it in the chest below it. For use with a cobble generator.",
     "file": "cobbler.lua",
     "type": "script"
   },
   {
     "name": "EasyDig",
+    "id": "easydig",
     "description": "Give it a width, depth and height and it'll dig the area out for you. Checks for fuel, and allows for both starting on the top or bottom of your area.",
     "file": "easydig.lua",
     "type": "script"
   },
   {
     "name": "MineShafter",
+    "id": "mineshafter",
     "description": "15 down, 5 forward. Tell it how often to repeat this, it might ask you to feed it but afterwards your mine will be automatically dug out.",
     "file": "mineshafter.lua",
     "type": "script"
   },
   {
-    "name": "ECDYSIS",
+    "displayName": "ECDYSIS",
+    "id": "ecdysis",
     "description": "A collection of utility functions for turtles. Keeps track of position and direction, includes pathfinding.",
     "file": "ecdysis.lua",
     "type": "lib"
   },
   {
     "name": "TaBuLa",
+    "id": "tabula",
     "description": "Simple extension library for tables. Printing, filtering etc.",
     "file": "tabula.lua",
     "type": "lib"
