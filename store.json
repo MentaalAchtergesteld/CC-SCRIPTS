@@ -29,7 +29,7 @@
     "type": "script"
   },
   {
-    "displayName": "ECDYSIS",
+    "name": "ECDYSIS",
     "id": "ecdysis",
     "description": "A collection of utility functions for turtles. Keeps track of position and direction, includes pathfinding.",
     "file": "ecdysis.lua",
