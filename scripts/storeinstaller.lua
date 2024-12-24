@@ -1,6 +1,6 @@
 local BASE_URL = "https://raw.githubusercontent.com/MentaalAchtergesteld/CC-SCRIPTS/refs/heads/main/";
-local SCRIPTS_URL = BASE_URL .. "scripts/";
-local LIB_URL = BASE_URL .. "lib/";
+
+local SCRIPT_STATUS_PATH = "/store/scriptStatus.json";
 
 local function json(content)
     return textutils.unserialiseJSON(content)
@@ -67,6 +67,10 @@ local function main()
             return;
         end 
     end
+
+    local file = fs.open(SCRIPT_STATUS_PATH, "w");
+    file.write(textutils.serializeJSON({ scriptstore = "installed" }));
+    file.close();
 
     print("Succesfully installed script store.");
 end
