@@ -47,7 +47,6 @@ local function cleanup(files)
 end
 
 local function main()
-    term.clear();
     local storeUrl = BASE_URL .. "/scripts/store.lua";
     local yoinkUrl = BASE_URL .. "/lib/yoink.lua";
 
@@ -69,7 +68,6 @@ local function main()
         end 
     end
 
-    term.clear();
     print("Succesfully installed script store.");
 end
 
