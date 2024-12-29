@@ -25,7 +25,7 @@ local function switchScreen(screenName, switchData)
     currentScreen = SCREENS[screenName];
     if currentScreen == nil then return end
 
-    currentScreen.enter(switchData);
+    currentScreen.enter(switchData or {});
 end
 
 local function drawLoop()
@@ -281,8 +281,8 @@ local function createHomeScreen()
                 updateScript(SCRIPTS[selectedIndex]);
             elseif key == keys.r then
                 removeScript(SCRIPTS[selectedIndex]);
-            elseif key == keys.b then
-                switchScreen("home");
+            elseif key == keys.h then
+                switchScreen("help", { sceneToSwitchTo = "home" })
             end
         end
     end
@@ -296,9 +296,10 @@ end
 
 local function createScriptDetailsScreen()
     local script = nil;
+    local scriptIndex = nil;
 
     local function enter(switchData)
-        local scriptIndex = switchData.scriptIndex;
+        scriptIndex = switchData.scriptIndex;
         
         script = SCRIPTS[scriptIndex];
     end
@@ -346,14 +347,16 @@ local function createScriptDetailsScreen()
         if eventName == "key" then
             local key = event[2];
 
-            if key == keys.i then
+            if key == keys.i and script and SCRIPT_STATUS[script.id] == nil then
                 installScript(script);
-            elseif key == keys.u then
+            elseif key == keys.u and script and SCRIPT_STATUS[script.id] == "installed" then
                 updateScript(script);
-            elseif key == keys.r then
+            elseif key == keys.r and script and SCRIPT_STATUS[script.id] == "installed" then
                 removeScript(script);
             elseif key == keys.b then
                 switchScreen("home");
+            elseif key == keys.h then
+                switchScreen("help", { sceneToSwitchTo = "scriptDetails", data = { scriptIndex = scriptIndex } })
             end
         end
     end
@@ -362,6 +365,61 @@ local function createScriptDetailsScreen()
         enter = enter,
         draw = draw,
         input = input,
+    }
+end
+
+local function createHelpScreen()
+    local sceneToSwitchTo = nil;
+    local data = nil;
+
+    local function enter(switchData)
+        sceneToSwitchTo = switchData.sceneToSwitchTo;
+        data = switchData.data or {};
+    end
+
+    local function draw()
+        term.clear();
+        term.setCursorPos(1, 1);
+        print("HOME SCREEN");
+        print(string.rep("-", screenWidth));
+        print("[Enter] See script details.");
+        print("[I] Install currently selected script.");
+        print("[U] Update currently selected script.");
+        print("[R] Remove currently selected script.");
+        print("[^] Move up.");
+        print("[v] Move down.");
+        print("[Q] Quit.");
+        print("[H] Help.");
+        
+        print("DETAILS SCREEN");
+        print(string.rep("-", screenWidth));
+        print("[I] Install script.");
+        print("[U] Update script.");
+        print("[R] Remove script.");
+        print("[B] Back to home.");
+        print("[H] Help.");
+
+        print("HELP SCREEN");
+        print(string.rep("-", screenWidth));
+        print("[B] Back.");
+    end
+
+    local function input(event)
+        local eventName = event[1];
+
+        if eventName == "key" then
+            local key = event[2];
+
+            if key == keys.b then
+                switchScreen(sceneToSwitchTo, data);
+            end
+        end
+    end
+
+    return {
+        enter = enter,
+        draw = draw,
+        input = input
     }
 end
 
@@ -403,6 +461,7 @@ local function main()
 
     SCREENS["home"] = createHomeScreen();
     SCREENS["scriptDetails"] = createScriptDetailsScreen();
+    SCREENS["help"] = createHelpScreen();
     SCREENS["quit"] = createQuitScreen();
 
     switchScreen("home");
