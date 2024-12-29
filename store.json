@@ -41,5 +41,18 @@
     "description": "Simple extension library for tables. Printing, filtering etc.",
     "file": "tabula.lua",
     "type": "lib"
+  },
+  {
+    "name": "ScriptStore",
+    "id": "scriptstore",
+    "description": "The place to get all your scripts, you're probably in it right now.",
+    "type": "script",
+    "deps": ["yoink"]
+  },
+  {
+    "name": "Yoink!",
+    "id": "yoink",
+    "description": "Small library to make HTTP requests easier.",
+    "type": "lib"
   }
 ]
