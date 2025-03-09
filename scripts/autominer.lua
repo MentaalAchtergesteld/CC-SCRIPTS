@@ -32,7 +32,7 @@ local KEEP = {
     "minecraft:emerald",
     "minecraft:lapis_lazuli",
     "minecraft:diamond",
-    "minecraft:netherite_scrap",
+    "minecraft:ancient_debris",
     "create:raw_zinc"
 }
 
