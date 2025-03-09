@@ -18,6 +18,7 @@ local ORES = {
     "minecraft:deepslate_lapis_ore",
     "minecraft:diamond_ore",
     "minecraft:deepslate_diamond_ore",
+    "minecraft:ancient_debris",
     "create:zinc_ore",
     "create:deepslate_zinc_ore",
 };

@@ -46,6 +46,7 @@
     "name": "ScriptStore",
     "id": "scriptstore",
     "description": "The place to get all your scripts, you're probably in it right now.",
+    "file": "store.lua",
     "type": "script",
     "deps": ["yoink"]
   },
@@ -53,6 +54,7 @@
     "name": "Yoink!",
     "id": "yoink",
     "description": "Small library to make HTTP requests easier.",
+    "file": "yoink.lua",
     "type": "lib"
   }
 ]
