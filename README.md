@@ -13,3 +13,4 @@ Libraries:
 
 - **Ecdysis**: A place for me to dump all turtle utility functions in, also keeps track of position and direction and includes pathfinding.
 - **Tabula**: Simple extension library for tables. Printing, filtering, etc.
+- **TUI**: Easy to use and "stupid" library for creating TUI's in ComputerCraft.
