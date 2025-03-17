@@ -49,6 +49,7 @@ end
 local function main()
     local storeUrl = BASE_URL .. "/scripts/store.lua";
     local yoinkUrl = BASE_URL .. "/lib/yoink.lua";
+    local tuiUrl = BASE_URL .. "/lib/tui.lua";
 
     if fs.exists("store.lua") then
         print("Store already installed!");
@@ -68,8 +69,19 @@ local function main()
         end 
     end
 
+    if not fs.exists("/lib/tui.lua") then
+        if not installScript(tuiUrl, "tui.lua", "/lib/") then
+            cleanup({"store.lua", "/lib/tui.lua"});
+            return;
+        end 
+    end
+
     local file = fs.open(SCRIPT_STATUS_PATH, "w");
-    file.write(textutils.serializeJSON({ scriptstore = "installed" }));
+    file.write(textutils.serializeJSON({
+        scriptstore = 1,
+        yoink = 1,
+        tui = 1,
+    }));
     file.close();
 
     print("Succesfully installed script store.");
