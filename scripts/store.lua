@@ -1,472 +1,263 @@
+local tui = require("/lib/tui")
 local yoink = require("/lib/yoink");
+
 
 local BASE_URL = "https://raw.githubusercontent.com/MentaalAchtergesteld/CC-SCRIPTS/refs/heads/main/";
 local STORE_URL = BASE_URL .. "store.json";
 local SCRIPTS_URL = BASE_URL .. "scripts/";
 local LIB_URL = BASE_URL .. "lib/";
 
-local STORE_PATH = "store/";
-local SCRIPT_STATUS_PATH = STORE_PATH .. "scriptStatus.json";
-
 local SCRIPTS_DIR = "/";
 local LIB_DIR = "lib/";
 
-local SCRIPTS = {};
-local SCRIPT_STATUS = {};
-local LOG = {};
+local STORE_PATH = "store/";
+local APP_STATUS_PATH = STORE_PATH .. "scriptStatus.json";
 
-local screenWidth, screenHeight = term.getSize();
+local termWidth, termHeight = term.getSize();
 
-local RUNNING = true;
-local SCREENS = {};
-local currentScreen = nil;
+local APPS = {};
+local AppStatus = {
+    Installed = 1,
+    Installing = 2,
+}
+local APP_STATUS = {};
 
-local function switchScreen(screenName, switchData)
-    currentScreen = SCREENS[screenName];
-    if currentScreen == nil then return end
-
-    currentScreen.enter(switchData or {});
-end
-
-local function drawLoop()
-    while RUNNING do
-        if currentScreen == nil then goto continue end
-
-        currentScreen.draw();
-
-        os.sleep(0.1);
-        
-        ::continue::
-    end
-end
-
-local function inputLoop()
-    while RUNNING do
-        if currentScreen == nil then goto continue end
-
-        local event = {os.pullEvent()};
-
-        currentScreen.input(event);
-
-        ::continue::
-    end
-end
-
-local function loadStore()
-    local response = yoink.get(STORE_URL).json();
+local function loadApps()
+    local response, error = yoink.get(STORE_URL).json();
     if not response then
-        table.insert(LOG, "Couldn't load script list.");
-    end;
-
-    SCRIPTS = response;
-end
-
-local function findScriptIndexById(id)
-    for i, script in ipairs(SCRIPTS) do
-        if script.id == id then
-            return i;
-        end
+        return nil, error;
     end
 
-    return nil;
+    return response, nil;
 end
 
-local function loadScriptStatus()
-    if not fs.exists(SCRIPT_STATUS_PATH) then
-        SCRIPT_STATUS = {};
+local function loadAppStatusses()
+    if not fs.exists(APP_STATUS_PATH) then
+        APP_STATUS = {};
         return;
     end
 
-    local file = fs.open(SCRIPT_STATUS_PATH, "r");
+    local file = fs.open(APP_STATUS_PATH, "r");
     local content = file.readAll();
     file.close();
 
-    SCRIPT_STATUS = textutils.unserializeJSON(content) or {};
+    APP_STATUS = textutils.unserializeJSON(content) or {};
 end
 
-local function updateScriptStatus(scriptName, status)
-    SCRIPT_STATUS[scriptName] = status;
+local function getAppWithId(id)
+    for _, app in ipairs(APPS) do
+        if app.id == id then
+            return app;
+        end
+    end
+
+    return nil, "Could not find app with supplied ID";
+end
+
+local function updateAppStatus(appId, newStatus)
+    APP_STATUS[appId] = newStatus;
     
-    local file = fs.open(SCRIPT_STATUS_PATH, "w");
-    file.write(textutils.serializeJSON(SCRIPT_STATUS));
+    local file = fs.open(APP_STATUS_PATH, "w");
+    file.write(textutils.serializeJSON(APP_STATUS));
     file.close();
 end
 
-local function installScript(script)
-    if script == nil or script.id == nil then
-        return false, "No script provided"
-    end
-
-
-    local installQueue = {script};
-    local installed = {};
+local function installApp(app)
+    local installQueue = {app};
+    local installedIds = {app.id};
 
     while #installQueue > 0 do
-        local currentScript = table.remove(installQueue, 1);
-
-        if installed[currentScript.id] then
-            goto continue;
+        local currentApp = table.remove(installQueue, 1);
+        
+        if installedIds[currentApp.id] then
+            goto continue
         end
 
-        updateScriptStatus(currentScript.id, "installing");
-        local url = 
-            (currentScript.type == "script" and SCRIPTS_URL) or
-            (currentScript.type == "lib" and LIB_URL);
-    
+        updateAppStatus(currentApp.id, AppStatus.Installing);
+
+        local url =
+            (currentApp.type == "script" and SCRIPTS_URL) or
+            (currentApp.type == "lib"    and LIB_URL);
+        
         if url == nil then
-            updateScriptStatus(currentScript.id, nil);
             goto continue;
         end
 
-        local response = yoink.get(url .. currentScript.file);
-        if not response then
-            updateScriptStatus(currentScript.id, nil);
+        local res, error = yoink.get(url .. currentApp.file);
+
+        if not res or error then
+            local file = fs.open("error", "w");
+            file.write(error);
+            file.close();
             goto continue;
         end
 
-        local directory = 
-            (currentScript.type == "script" and SCRIPTS_DIR) or 
-            (currentScript.type == "lib" and LIB_DIR);
-
-        local file = fs.open(directory .. currentScript.file, "w");
-        file.write(response.content);
+        local directory =
+            (currentApp.type == "script" and SCRIPTS_DIR) or
+            (currentApp.type == "lib"    and LIB_DIR);
+        
+        local file = fs.open(directory .. currentApp.file, "w");
+        file.write(res.content);
         file.close();
 
-        updateScriptStatus(currentScript.id, "installed");
-        installed[currentScript.id] = true;
+        updateAppStatus(currentApp.id, AppStatus.Installed);
+        installedIds[currentApp.id] = true;
 
-        if currentScript.deps then
-            for _, dep in ipairs(currentScript.deps) do
-                local scriptIndex = findScriptIndexById(dep);
-                local dependency = SCRIPTS[scriptIndex];
-
-                if dependency and not installed[dependency.id] then
-                    table.insert(installQueue, SCRIPTS[scriptIndex]);                   
+        if currentApp.deps then
+            for _, dependencyId in ipairs(currentApp.deps) do
+                local app, error = getAppWithId(dependencyId);
+                if not error and not installedIds[dependencyId] then
+                    table.insert(installQueue, app);
                 end
             end
         end
 
         ::continue::
     end
-
-    return true;
 end
 
-local function updateScript(script)
-    if not SCRIPT_STATUS[script.id] == "installed" then
-        return false, "Script is not installed.";
-    end
-
-    updateScriptStatus(script.id, "updating");
-
-    installScript(script);
-end
-
-local function removeScript(script)
-    if not SCRIPT_STATUS[script.id] == "installed" then
+local function removeApp(app)
+    if not APP_STATUS[app.id] == "installed" then
         return false, "Script is not installed.";
     end
 
     local directory = 
-        (script.type == "script" and SCRIPTS_DIR) or 
-        (script.type == "lib" and LIB_DIR);
+        (app.type == "script" and SCRIPTS_DIR) or 
+        (app.type == "lib" and LIB_DIR);
 
-    updateScriptStatus(script.id, "removing");
-    fs.delete(directory .. script.file);
-    updateScriptStatus(script.id, nil);
+    fs.delete(directory .. app.file);
+    updateAppStatus(app.id, nil);
 end
 
-local function installAllInstallingScripts()
-    for scriptName, status in ipairs(SCRIPT_STATUS) do
-        if status == "installing" and SCRIPTS[scriptName] then
-            installScript(SCRIPTS[scriptName]);
-        end
-    end
-end
+local function createHomeView()
+    local homeView = tui.createView("Home");
 
-local function updateAllUpdatingScripts()
-    for scriptName, status in ipairs(SCRIPT_STATUS) do
-        if status == "updating" and SCRIPTS[scriptName] then
-            updateScript(SCRIPTS[scriptName]);
-        end
-    end
-end
+    local titleBar = tui.createTitleBar("Script Store");
+    local appList = tui.createList(1, 3, APPS,
+        function(index, item, isSelected)
+            local itemIndex = "[" .. index .. "]";
 
-local function removeAllRemovingScripts()
-    for scriptName, status in ipairs(SCRIPT_STATUS) do
-        if status == "removing" and SCRIPTS[scriptName] then
-            removeScript(SCRIPTS[scriptName]);
-        end
-    end
-end
-
-local function createHomeScreen()
-    local selectedIndex = 1;
-
-    local title = " Script Store ";
-    local borderWidth = screenWidth - #title;
-    local fullTitle = string.rep("=", borderWidth/2) .. title .. string.rep("=", borderWidth/2);
-
-    local function enter(switchData)
-        loadStore();
-    end
-
-    local function draw()
-        term.clear();
-
-        term.setCursorPos(1, 1);
-        term.write(fullTitle);
-
-        local listY = 2;
-        local listHeight = 7;
-        local listCenter = math.floor(listHeight/2);
-
-        local listStart = math.max(1, selectedIndex - listCenter + 1);
-        listStart = math.min(listStart, math.max(1, #SCRIPTS - listHeight + 1));
-
-        for i=1, math.min(listHeight, #SCRIPTS) do
-            term.setCursorPos(1, i + listY);
-
-            local scriptIndex = i + (listStart - 1);
-            if scriptIndex > #SCRIPTS then break end;
-
-            local script = SCRIPTS[scriptIndex];
-
-            local isSelected = "";
-
-            if scriptIndex == selectedIndex then
-                term.setTextColor(colors.lightGray);
-                isSelected = ">";
-            else
-                term.setTextColor(colors.white);
-                isSelected = "";
-            end
-
-            local isInstalled =
-                (SCRIPT_STATUS[script.id] == "installed" and "*") or
-                (SCRIPT_STATUS[script.id] ~= nil and "~") or
+            local itemStatusIndicator =
+                (APP_STATUS[item.id] == AppStatus.Installed  and "*") or
+                (APP_STATUS[item.id] == AppStatus.Installing and "~") or
                 "+"
 
-            local type = (script.type == "script" and "Script") or (script.type == "lib" and "Library");
+            local itemEntry = itemStatusIndicator .. " " .. item.name;
 
-            term.write(string.format("%s [%d] %s %s (%s)", isSelected, scriptIndex, isInstalled, script.name, type));
-        end
-
-        term.setTextColor(colors.white);
-
-        term.setCursorPos(1, screenHeight-2);
-        term.write("[Q] Quit | [Enter] See script details");
-        term.setCursorPos(1, screenHeight-1)
-        term.write("[I] Install | [U] Update | [R] Remove");
-        term.setCursorPos(1, screenHeight)
-        term.write("[^] Up | [v] Down");
-    end
-
-    local function input(event)
-        local eventName = event[1];
-        if eventName == "key" then
-            local key = event[2];
-
-            if key == keys.up then
-                selectedIndex = math.max(selectedIndex - 1, 1);
-            elseif key == keys.down then
-                selectedIndex = math.min(selectedIndex + 1, #SCRIPTS);
-            elseif key == keys.enter then
-                switchScreen("scriptDetails", { scriptIndex = selectedIndex });
-            elseif key == keys.q then
-                switchScreen("quit");
-            elseif key == keys.i then
-                    installScript(SCRIPTS[selectedIndex]);
-            elseif key == keys.u then
-                updateScript(SCRIPTS[selectedIndex]);
-            elseif key == keys.r then
-                removeScript(SCRIPTS[selectedIndex]);
-            elseif key == keys.h then
-                switchScreen("help", { sceneToSwitchTo = "home" })
+            local itemType = "";
+            if item.type == "script" then
+                itemType = "(Script)";
+            elseif item.type == "lib" then
+                itemType = "(Lib)";
             end
-        end
-    end
 
-    return {
-        enter = enter,
-        draw = draw,
-        input = input;
-    }
-end
+            local listItem = itemIndex .. " " .. itemEntry .. " " .. itemType;
 
-local function createScriptDetailsScreen()
-    local script = nil;
-    local scriptIndex = nil;
-
-    local function enter(switchData)
-        scriptIndex = switchData.scriptIndex;
-        
-        script = SCRIPTS[scriptIndex];
-    end
-
-    local function draw()
-        term.clear();
-        
-        local scriptName = script and script.name or "NO NAME";
-        local scriptDescription = script and script.description or "NO DESCRIPTION";
-
-        term.setTextColor(colors.white);
-
-        term.setCursorPos(1, 1);
-        term.write(scriptName);
-
-        term.setCursorPos(1, 2);
-        term.write(string.rep("-", screenWidth));
-
-        term.setCursorPos(1, 3);
-        print(scriptDescription);
-
-        local scriptInstructions = "";
-
-        if script and script.id then
-            local scriptStatus = SCRIPT_STATUS[script.id];
-            if scriptStatus == "installed" then
-                scriptInstructions = "[U] Update | [R] Remove";
-            elseif scriptStatus == "installing" then
-                scriptInstructions = "Installing...";
-            elseif scriptStatus == "updating" then
-                scriptInstructions = "Updating...";
-            elseif scriptStatus == "removing" then
-                scriptInstructions = "Removing...";
+            if isSelected then
+                return "> " .. listItem;
             else
-                scriptInstructions = "[I] Install";
+                return " " .. listItem;
+            end 
+        end
+    );
+    appList.focused = true;
+
+    local labels = {
+        tui.createLabel(1, termHeight - 2, "[Q] Quit | [Enter] See script details"),
+        tui.createLabel(1, termHeight - 1, "[I] Install | [U] Update | [R] Remove"),
+        tui.createLabel(1, termHeight - 0, "[^] Up | [v] Down"),
+    };
+
+    local errorLabel = tui.createLabel(1, 3, "");
+
+    homeView:addElement(titleBar);
+    homeView:addElement(appList);
+    homeView:addElements(labels);
+
+    homeView:addEventListener("key_up", function(event)
+        local key = event[2];
+
+        if appList.focused then
+            local selectedApp = appList.items[appList.selected];
+            if key == keys.enter then
+                tui.switchView("AppDetails", { appName = selectedApp.name, appDescription = selectedApp.description });
+            elseif key == keys.i then
+                installApp(selectedApp);
+            elseif key == keys.r then
+                removeApp(selectedApp);
             end
         end
+    end);
 
-        term.setCursorPos(1, screenHeight);
-        term.write("[B] Back | " .. scriptInstructions);
-    end
-
-    local function input(event)
-        local eventName = event[1];
-        if eventName == "key" then
-            local key = event[2];
-
-            if key == keys.i and script and SCRIPT_STATUS[script.id] == nil then
-                installScript(script);
-            elseif key == keys.u and script and SCRIPT_STATUS[script.id] == "installed" then
-                updateScript(script);
-            elseif key == keys.r and script and SCRIPT_STATUS[script.id] == "installed" then
-                removeScript(script);
-            elseif key == keys.b then
-                switchScreen("home");
-            elseif key == keys.h then
-                switchScreen("help", { sceneToSwitchTo = "scriptDetails", data = { scriptIndex = scriptIndex } })
-            end
-        end
-    end
-
-    return {
-        enter = enter,
-        draw = draw,
-        input = input,
-    }
-end
-
-local function createHelpScreen()
-    local sceneToSwitchTo = nil;
-    local data = nil;
-
-    local function enter(switchData)
-        sceneToSwitchTo = switchData.sceneToSwitchTo;
-        data = switchData.data or {};
-    end
-
-    local function draw()
-        term.clear();
-        term.setCursorPos(1, 1);
-        print("HOME SCREEN");
-        print(string.rep("-", screenWidth));
-        print("[Enter] See script details.");
-        print("[I] Install currently selected script.");
-        print("[U] Update currently selected script.");
-        print("[R] Remove currently selected script.");
-        print("[^] Move up.");
-        print("[v] Move down.");
-        print("[Q] Quit.");
-        print("[H] Help.");
-        
-        print("DETAILS SCREEN");
-        print(string.rep("-", screenWidth));
-        print("[I] Install script.");
-        print("[U] Update script.");
-        print("[R] Remove script.");
-        print("[B] Back to home.");
-        print("[H] Help.");
-
-        print("HELP SCREEN");
-        print(string.rep("-", screenWidth));
-        print("[B] Back.");
-    end
-
-    local function input(event)
-        local eventName = event[1];
-
-        if eventName == "key" then
-            local key = event[2];
-
-            if key == keys.b then
-                switchScreen(sceneToSwitchTo, data);
-            end
+    homeView.onEnter = function (self)
+        local res, error = loadApps();
+        if error then
+            errorLabel.text = error;
+        else
+            APPS = res;
+            errorLabel.text = "";
+            
+            loadAppStatusses();
+            appList.items = APPS;
         end
     end
 
-    return {
-        enter = enter,
-        draw = draw,
-        input = input
-    }
+    return homeView;
 end
 
-local function createQuitScreen()
-    local function enter(switchData)
-        term.clear();
-        term.setCursorPos(1, 1);
-        RUNNING = false;
+local function createAppDetailsview()
+    local appDetailsView = tui.createView("AppDetails");
+
+    local appTitle = tui.createLabel(1, 1, "AppTitle");
+    local divider = tui.createDivider(2);
+    local appDescription = tui.createParagraph(1, 3, "App Description", termWidth);
+
+    local instructions = tui.createLabel(1, termHeight, "[B] Back | [I] Install");
+
+    appDetailsView:addElement(appTitle);
+    appDetailsView:addElement(divider);
+    appDetailsView:addElement(appDescription);
+    appDetailsView:addElement(instructions);
+
+    appDetailsView.onEnter = function(self)
+        local context = self.context;
+        if context.appName then
+            appTitle.text = context.appName;
+        end
+
+        if context.appDescription then
+            appDescription.text = context.appDescription;
+        end
     end
 
-    local function draw()
-        term.clear();
-        term.setCursorPos(1, 1);
-        term.write("Goodbye.");
-    end
+    appDetailsView:addEventListener("key_up", function(event)
+        local key = event[2];
 
-    local function input(event)
+        if key == keys.b then
+            tui.goBack();
+        end
+    end);
 
-    end
-
-    return {
-        enter = enter,
-        draw = draw,
-        input = input,
-    }
+    return appDetailsView;
 end
-
 
 local function main()
-    if not fs.exists("store") then
-        fs.makeDir("store");
-    end
-
-    loadStore();
-    loadScriptStatus();
-    installAllInstallingScripts();
-    updateAllUpdatingScripts();
-    removeAllRemovingScripts();
-
-    SCREENS["home"] = createHomeScreen();
-    SCREENS["scriptDetails"] = createScriptDetailsScreen();
-    SCREENS["help"] = createHelpScreen();
-    SCREENS["quit"] = createQuitScreen();
-
-    switchScreen("home");
-
-    parallel.waitForAll(drawLoop, inputLoop);
+    local homeView = createHomeView();
+    local appDetailsView = createAppDetailsview();
+    
+    tui.addView(homeView);
+    tui.addView(appDetailsView);
+    
+    tui.switchView("Home");
+    
+    tui.addEventListener("key_up", function(event)
+        local key = event[2];
+        if key == keys.q then
+            tui.stop();
+        end
+    end);
+    
+    tui.start();
 end
 
 main();
