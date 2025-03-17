@@ -133,33 +133,56 @@ local function createHomeView()
     local homeView = tui.createView("Home");
 
     local titleBar = tui.createTitleBar("Script Store");
-    local appList = tui.createList(1, 3, APPS,
-        function(index, item, isSelected)
-            local itemIndex = "[" .. index .. "]";
+    local appListY = 3;
+    local appListMaxY = 13;
+    -- local appList = tui.createList(1, appListY, appListMaxY,  APPS,
+    --     function(index, item, isSelected)
+    --         local itemIndex = "[" .. index .. "]";
 
-            local itemStatusIndicator =
-                (APP_STATUS[item.id] == AppStatus.Installed  and "*") or
-                (APP_STATUS[item.id] == AppStatus.Installing and "~") or
-                "+"
+    --         local itemStatusIndicator =
+    --             (APP_STATUS[item.id] == AppStatus.Installed  and "*") or
+    --             (APP_STATUS[item.id] == AppStatus.Installing and "~") or
+    --             "+"
 
-            local itemEntry = itemStatusIndicator .. " " .. item.name;
+    --         local itemEntry = itemStatusIndicator .. " " .. item.name;
 
-            local itemType = "";
-            if item.type == "script" then
-                itemType = "(Script)";
-            elseif item.type == "lib" then
-                itemType = "(Lib)";
-            end
+    --         local itemType = "";
+    --         if item.type == "script" then
+    --             itemType = "(Script)";
+    --         elseif item.type == "lib" then
+    --             itemType = "(Lib)";
+    --         end
 
-            local listItem = itemIndex .. " " .. itemEntry .. " " .. itemType;
+    --         local listItem = itemIndex .. " " .. itemEntry .. " " .. itemType;
 
-            if isSelected then
-                return "> " .. listItem;
-            else
-                return " " .. listItem;
-            end 
-        end
-    );
+    --         if isSelected then
+    --             return "> " .. listItem;
+    --         else
+    --             return " " .. listItem;
+    --         end 
+    --     end
+    -- );
+    local appList = tui.createList(1, appListY, appListMaxY, {
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+    });
     appList.focused = true;
 
     local labels = {
@@ -180,7 +203,7 @@ local function createHomeView()
         if appList.focused then
             local selectedApp = appList.items[appList.selected];
             if key == keys.enter then
-                tui.switchView("AppDetails", { appName = selectedApp.name, appDescription = selectedApp.description });
+                tui.switchView("AppDetails", { app = selectedApp });
             elseif key == keys.i then
                 installApp(selectedApp);
             elseif key == keys.r then
@@ -190,16 +213,16 @@ local function createHomeView()
     end);
 
     homeView.onEnter = function (self)
-        local res, error = loadApps();
-        if error then
-            errorLabel.text = error;
-        else
-            APPS = res;
-            errorLabel.text = "";
+        -- local res, error = loadApps();
+        -- if error then
+        --     errorLabel.text = error;
+        -- else
+        --     APPS = res;
+        --     errorLabel.text = "";
             
-            loadAppStatusses();
-            appList.items = APPS;
-        end
+        --     loadAppStatusses();
+        --     appList.items = APPS;
+        -- end
     end
 
     return homeView;
@@ -209,29 +232,85 @@ local function createAppDetailsview()
     local appDetailsView = tui.createView("AppDetails");
 
     local appTitle = tui.createLabel(1, 1, "AppTitle");
+    local appStatusLabel = tui.createLabel(termWidth, 1, "");
     local divider = tui.createDivider(2);
-    local appDescription = tui.createParagraph(1, 3, "App Description", termWidth);
+    local appType = {
+        tui.createLabel(1, 3, "Type: ");
+        tui.createLabel(7, 3, "None");
+    };
+    local appDescription = tui.createParagraph(1, 5, "App Description", math.floor(termWidth*0.75));
 
-    local instructions = tui.createLabel(1, termHeight, "[B] Back | [I] Install");
+    local instructions = tui.createLabel(1, termHeight, "[I] Install | [B] Back");
 
     appDetailsView:addElement(appTitle);
+    appDetailsView:addElement(appStatusLabel);
     appDetailsView:addElement(divider);
+    appDetailsView:addElements(appType);
     appDetailsView:addElement(appDescription);
     appDetailsView:addElement(instructions);
 
-    appDetailsView.onEnter = function(self)
-        local context = self.context;
-        if context.appName then
-            appTitle.text = context.appName;
-        end
+    local function updateInstructions(appId)
+        local appStatus = APP_STATUS[appId];
 
-        if context.appDescription then
-            appDescription.text = context.appDescription;
+        if appStatus == AppStatus.Installed or appStatus == AppStatus.Installing then
+            instructions.text = "[U] Update | [R] Remove | [B] Back";
+        else
+            instructions.text = "[I] Install | [B] Back";
         end
+    end
+
+    local function updateAppStatus(appId)
+        local appStatus = APP_STATUS[appId];
+
+        appStatusLabel.text =
+            (appStatus == AppStatus.Installed and "Installed") or
+            (appStatus == AppStatus.Installing and "Installing...") or
+            "Not Installed";
+        
+        appStatusLabel.x = termWidth - #appStatusLabel.text;
+    end
+
+    appDetailsView.onEnter = function(self)
+        local app = self.context.app;
+        if not app then return end;
+
+        appTitle.text = app.name;
+        appDescription.text = app.description;
+
+        appType[2].text =
+            (app.type == "script" and "Script") or
+            (app.type == "lib" and "Library");
+        
+        updateInstructions(app.id);
+        updateAppStatus(app.id);
     end
 
     appDetailsView:addEventListener("key_up", function(event)
         local key = event[2];
+
+        local currentApp = appDetailsView.context.app;
+
+        if currentApp then
+            local status = APP_STATUS[currentApp.id];
+
+            if status == AppStatus.Installed then
+                if key == keys.r then
+                    removeApp(currentApp);
+                    updateAppStatus(currentApp.id);
+                    updateInstructions(currentApp.id);
+                elseif key == keys.u then
+                    installApp(currentApp);
+                    updateAppStatus(currentApp.id);
+                    updateInstructions(currentApp.id);
+                end
+            elseif status ~= AppStatus.Installing then
+                if key == keys.i then
+                    installApp(currentApp);
+                    updateAppStatus(currentApp.id);
+                    updateInstructions(currentApp.id);
+                end
+            end
+        end
 
         if key == keys.b then
             tui.goBack();
