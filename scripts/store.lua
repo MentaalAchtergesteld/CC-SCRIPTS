@@ -192,16 +192,16 @@ local function createHomeView()
     end);
 
     homeView.onEnter = function (self)
-        -- local res, error = loadApps();
-        -- if error then
-        --     errorLabel.text = error;
-        -- else
-        --     APPS = res;
-        --     errorLabel.text = "";
+        local res, error = loadApps();
+        if error then
+            errorLabel.text = error;
+        else
+            APPS = res;
+            errorLabel.text = "";
             
-        --     loadAppStatusses();
-        --     appList.items = APPS;
-        -- end
+            loadAppStatusses();
+            appList.items = APPS;
+        end
     end
 
     return homeView;
