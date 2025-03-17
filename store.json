@@ -56,5 +56,12 @@
     "description": "Small library to make HTTP requests easier.",
     "file": "yoink.lua",
     "type": "lib"
+  },
+  {
+    "name": "TUI",
+    "id": "tui",
+    "description": "Easy to use and \"stupid\" library for creating TUI's in ComputerCraft.",
+    "file": "tui.lua",
+    "type": "lib"
   }
 ]
