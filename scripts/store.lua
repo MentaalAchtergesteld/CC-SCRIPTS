@@ -135,54 +135,33 @@ local function createHomeView()
     local titleBar = tui.createTitleBar("Script Store");
     local appListY = 3;
     local appListMaxY = 13;
-    -- local appList = tui.createList(1, appListY, appListMaxY,  APPS,
-    --     function(index, item, isSelected)
-    --         local itemIndex = "[" .. index .. "]";
+    local appList = tui.createList(1, appListY, appListMaxY,  APPS,
+        function(index, item, isSelected)
+            local itemIndex = "[" .. index .. "]";
 
-    --         local itemStatusIndicator =
-    --             (APP_STATUS[item.id] == AppStatus.Installed  and "*") or
-    --             (APP_STATUS[item.id] == AppStatus.Installing and "~") or
-    --             "+"
+            local itemStatusIndicator =
+                (APP_STATUS[item.id] == AppStatus.Installed  and "*") or
+                (APP_STATUS[item.id] == AppStatus.Installing and "~") or
+                "+"
 
-    --         local itemEntry = itemStatusIndicator .. " " .. item.name;
+            local itemEntry = itemStatusIndicator .. " " .. item.name;
 
-    --         local itemType = "";
-    --         if item.type == "script" then
-    --             itemType = "(Script)";
-    --         elseif item.type == "lib" then
-    --             itemType = "(Lib)";
-    --         end
+            local itemType = "";
+            if item.type == "script" then
+                itemType = "(Script)";
+            elseif item.type == "lib" then
+                itemType = "(Lib)";
+            end
 
-    --         local listItem = itemIndex .. " " .. itemEntry .. " " .. itemType;
+            local listItem = itemIndex .. " " .. itemEntry .. " " .. itemType;
 
-    --         if isSelected then
-    --             return "> " .. listItem;
-    --         else
-    --             return " " .. listItem;
-    --         end 
-    --     end
-    -- );
-    local appList = tui.createList(1, appListY, appListMaxY, {
-        "1",
-        "2",
-        "3",
-        "4",
-        "5",
-        "6",
-        "7",
-        "8",
-        "9",
-        "10",
-        "11",
-        "12",
-        "13",
-        "14",
-        "15",
-        "16",
-        "17",
-        "18",
-        "19",
-    });
+            if isSelected then
+                return "> " .. listItem;
+            else
+                return " " .. listItem;
+            end 
+        end
+    );
     appList.focused = true;
 
     local labels = {
