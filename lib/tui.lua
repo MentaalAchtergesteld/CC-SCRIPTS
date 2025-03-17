@@ -43,6 +43,7 @@ function tui.createView(name)
     local view = {
         name = name,
         elements = {},
+        eventListeners = {},
         context = {},
         onEnter = function(self) end,
         onExit = function(self) end,
@@ -178,12 +179,14 @@ function tui.createTitleBar(text)
     return titleBar;
 end
 
-function tui.createList(x, y, items, itemGenerator)
+function tui.createList(x, y, maxHeight, items, itemGenerator)
     local list = {
         x = x,
         y = y,
         width = 0,
         height = #items,
+        maxHeight = maxHeight,
+        scrollOffset = 0,
         selected = 1,
         items = items,
         itemGenerator = itemGenerator or function(index, item, isSelected)
@@ -194,15 +197,19 @@ function tui.createList(x, y, items, itemGenerator)
             end
         end,
         draw = function(self)
-            for i, item in ipairs(self.items) do
+            for i = 1, self.maxHeight do
+                local itemIndex = self.scrollOffset + i;
+                if itemIndex > #self.items then break end;
+
                 term.setCursorPos(self.x, self.y + i - 1);
-                if i == self.selected then
+
+                if itemIndex == self.selected then
                     term.setTextColor(colors.lightGray);
                 else
                     term.setTextColor(colors.white);
                 end
 
-                local itemText = self.itemGenerator(i, item, i == self.selected);
+                local itemText = self.itemGenerator(itemIndex, self.items[itemIndex], itemIndex == self.selected);
                 term.write(itemText);
             end
 
@@ -214,14 +221,20 @@ function tui.createList(x, y, items, itemGenerator)
 
             local key = event[2];
 
+            local previousSelected = self.selected;
+
             if key == keys.down then
-                if self.selected < #self.items then
-                    self.selected = self.selected + 1;
-                end
+                self.selected = math.min(self.selected + 1, #self.items);
             elseif key == keys.up then
-                if self.selected > 1 then
-                    self.selected = self.selected - 1;
-                end
+                self.selected = math.max(self.selected - 1, 1);
+            end
+
+            if previousSelected ~= self.selected then
+                local desiredOffset = self.selected - math.ceil(self.maxHeight / 2);
+                self.scrollOffset = math.max(0, math.min(
+                    desiredOffset,
+                    math.max(0, #self.items - self.maxHeight)
+                ));
             end
         end
     }
